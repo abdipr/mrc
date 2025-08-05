@@ -96,13 +96,13 @@ export default function PengembalianPage() {
       filtered = filtered.filter((loan) => {
         const borrowerName = loan.borrower?.name?.toLowerCase() || ""
         const borrowerNIP = loan.borrower?.nip?.toLowerCase() || ""
-        const borrowerTeacherId = loan.borrower?.teacherId?.toLowerCase() || ""
+        const borrowerOfficerId = loan.borrower?.officerId?.toLowerCase() || ""
         const itemMatch = loan.itemDetails?.some((item) => item.name?.toLowerCase().includes(q))
         return (
           borrowerName.includes(q) ||
           itemMatch ||
           borrowerNIP.includes(q) ||
-          borrowerTeacherId.includes(q)
+          borrowerOfficerId.includes(q)
         )
       })
     }
@@ -345,9 +345,9 @@ export default function PengembalianPage() {
                 filteredLoans.map((loan) => (
                   <TableRow
                     key={loan.id}
-                    className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${
+                    className={`hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors ${
                       isOverdue(loan.dueDate) && loan.status === "dipinjam"
-                      ? "bg-red-50 dark:bg-red-900/10"
+                      ? "bg-red-50 dark:bg-red-900/10 hover:bg-red-100 dark:hover:bg-red-800/20"
                       : ""
                     } cursor-pointer`}
                     onClick={() => {
@@ -365,7 +365,7 @@ export default function PengembalianPage() {
                         <div>
                           <div className="font-medium text-gray-900 dark:text-white">{loan.borrower?.name}</div>
                           <div className="text-sm text-gray-500 dark:text-gray-400">
-                            {loan.borrower?.nip} - {loan.borrower?.teacherId}
+                            {loan.borrower?.nip} - {loan.borrower?.officerId}
                           </div>
                         </div>
                       </div>
@@ -434,7 +434,7 @@ export default function PengembalianPage() {
                             <div>
                               <div className="text-md font-semibold text-gray-900 dark:text-white">{detailLoan.borrower?.name}</div>
                               <div className="text-xs text-gray-500 dark:text-gray-400">NIP: {detailLoan.borrower?.nip}</div>
-                              <div className="text-xs text-gray-500 dark:text-gray-400">Teacher ID: {detailLoan.borrower?.teacherId}</div>
+                              <div className="text-xs text-gray-500 dark:text-gray-400">ID Pegawai: {detailLoan.borrower?.officerId}</div>
                               <div className="text-xs text-gray-500 dark:text-gray-400">No. HP: {detailLoan.borrower?.phone}</div>
                             </div>
                           </div>

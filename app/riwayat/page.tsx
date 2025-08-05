@@ -133,7 +133,7 @@ export default function RiwayatPeminjamanPage() {
       filtered = filtered.filter((loan) => {
         const borrowerName = loan.borrower?.name?.toLowerCase() || "";
         const borrowerNIP = loan.borrower?.nip?.toLowerCase() || "";
-        const borrowerTeacherId = loan.borrower?.teacherId?.toLowerCase() || "";
+        const borrowerOfficerId = loan.borrower?.officerId?.toLowerCase() || "";
         const itemMatch = loan.itemDetails?.some((item) =>
           item.name?.toLowerCase().includes(q)
         );
@@ -141,7 +141,7 @@ export default function RiwayatPeminjamanPage() {
           borrowerName.includes(q) ||
           itemMatch ||
           borrowerNIP.includes(q) ||
-          borrowerTeacherId.includes(q)
+          borrowerOfficerId.includes(q)
         );
       });
     }
@@ -313,9 +313,9 @@ export default function RiwayatPeminjamanPage() {
                 paginatedLoans.map((loan) => (
                     <TableRow
                     key={loan.id}
-                    className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${
+                    className={`hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors ${
                       isOverdue(loan.dueDate) && loan.status === "dipinjam"
-                      ? "bg-red-50 dark:bg-red-900/10"
+                      ? "bg-red-50 dark:bg-red-900/10 hover:bg-red-100 dark:hover:bg-red-800/20"
                       : ""
                     } cursor-pointer`}
                     onClick={() => {
@@ -335,7 +335,7 @@ export default function RiwayatPeminjamanPage() {
                         {loan.borrower?.name}
                         </div>
                         <div className="text-sm text-gray-500 dark:text-gray-400">
-                        {loan.borrower?.nip} - {loan.borrower?.teacherId}
+                        {loan.borrower?.nip} - {loan.borrower?.officerId}
                         </div>
                       </div>
                       </div>
@@ -374,7 +374,13 @@ export default function RiwayatPeminjamanPage() {
                     <TableCell className="font-medium">
                       {formatDate(loan.borrowDate)}
                     </TableCell>
-                    <TableCell className="font-medium">
+                    <TableCell
+                      className={`font-medium ${
+                        isOverdue(loan.dueDate) && loan.status !== "dikembalikan"
+                          ? "text-red-600 dark:text-red-400"
+                          : ""
+                      }`}
+                    >
                       {formatDate(loan.dueDate)}
                     </TableCell>
                     <TableCell>{getStatusBadge(loan)}</TableCell>
@@ -409,7 +415,7 @@ export default function RiwayatPeminjamanPage() {
                                   NIP: {detailLoan.borrower?.nip}
                                 </div>
                                 <div className="text-xs text-gray-500 dark:text-gray-400">
-                                  Teacher ID: {detailLoan.borrower?.teacherId}
+                                  ID Pegawai: {detailLoan.borrower?.officerId}
                                 </div>
                                 <div className="text-xs text-gray-500 dark:text-gray-400">
                                   No. HP: {detailLoan.borrower?.phone}

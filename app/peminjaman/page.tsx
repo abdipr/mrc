@@ -185,7 +185,7 @@ export default function PeminjamanPage() {
         const q = borrowerSearch.trim().toLowerCase()
         const keywords = q.split(/\s+/).filter(Boolean)
         // Gabungkan semua field jadi satu string
-        const combined = [borrower.name, borrower.nip, borrower.teacherId]
+        const combined = [borrower.name, borrower.nip, borrower.officerId]
           .filter(Boolean)
           .join(" ")
           .toLowerCase()
@@ -282,8 +282,8 @@ export default function PeminjamanPage() {
                     : borrowers.filter((b) => {
                       const name = (b.name || "").toLowerCase();
                       const nip = (b.nip || "").toLowerCase();
-                      const teacherId = (b.teacherId || "").toLowerCase();
-                      const combined = `${name} ${nip} ${teacherId}`;
+                      const officerId = (b.officerId || "").toLowerCase();
+                      const combined = `${name} ${nip} ${officerId}`;
                       return keywords.every((word) => combined.includes(word));
                       });
                     if (filtered.length === 0) return;
@@ -315,8 +315,8 @@ export default function PeminjamanPage() {
                     : borrowers.filter((b) => {
                       const name = (b.name || "").toLowerCase();
                       const nip = (b.nip || "").toLowerCase();
-                      const teacherId = (b.teacherId || "").toLowerCase();
-                      const combined = `${name} ${nip} ${teacherId}`;
+                      const officerId = (b.officerId || "").toLowerCase();
+                      const combined = `${name} ${nip} ${officerId}`;
                       return keywords.every((word) => combined.includes(word));
                       });
                     if (filtered.length === 0) {
@@ -344,7 +344,7 @@ export default function PeminjamanPage() {
                       >
                         <div className="flex flex-col text-left">
                         <span className="font-medium">{borrower.name || "-"}</span>
-                        <span className="text-xs text-gray-500">{borrower.nip || "-"} | {borrower.teacherId || ""}</span>
+                        <span className="text-xs text-gray-500">{borrower.nip || "-"} | {borrower.officerId || ""}</span>
                         </div>
                       </CommandItem>
                       ))}
@@ -365,7 +365,7 @@ export default function PeminjamanPage() {
                     <strong>NIP:</strong> {selectedBorrowerData.nip}
                   </span>
                   <span className="text-green-700 dark:text-green-400 col-span-2">
-                    <strong>Teacher ID:</strong> {selectedBorrowerData.teacherId}
+                    <strong>ID Pegawai:</strong> {selectedBorrowerData.officerId}
                   </span>
                 </div>
               </div>

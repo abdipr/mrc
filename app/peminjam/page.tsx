@@ -35,8 +35,9 @@ export default function PeminjamPage() {
   const [formData, setFormData] = useState({
     name: "",
     nip: "",
-    teacherId: "",
+    officerId: "",
     phone: "",
+    gender: "L",
   })
 
   const router = useRouter()
@@ -63,8 +64,9 @@ export default function PeminjamPage() {
         id: b.id,
         name: b.name,
         nip: b.nip,
-        teacherId: b.teacherId,
+        officerId: b.officerId,
         phone: b.phone || "",
+        gender: b.gender,
         createdAt: b.createdAt,
         updatedAt: b.updatedAt,
       })))
@@ -82,7 +84,7 @@ export default function PeminjamPage() {
         (borrower) =>
           borrower.name.toLowerCase().includes(search.toLowerCase()) ||
           (borrower.nip && borrower.nip.toLowerCase().includes(search.toLowerCase())) ||
-          (borrower.teacherId && borrower.teacherId.toLowerCase().includes(search.toLowerCase())) ||
+          (borrower.officerId && borrower.officerId.toLowerCase().includes(search.toLowerCase())) ||
           (borrower.phone && borrower.phone.toLowerCase().includes(search.toLowerCase()))
       )
     }
@@ -128,8 +130,9 @@ export default function PeminjamPage() {
     setFormData({
       name: borrower.name,
       nip: borrower.nip,
-      teacherId: borrower.teacherId,
+      officerId: borrower.officerId,
       phone: borrower.phone || "",
+      gender: borrower.gender,
     })
     setIsDialogOpen(true)
   }
@@ -155,13 +158,13 @@ export default function PeminjamPage() {
       })
     }
   }
-
   const resetForm = () => {
     setFormData({
       name: "",
       nip: "",
-      teacherId: "",
+      officerId: "",
       phone: "",
+      gender: "",
     })
   }
 
@@ -229,36 +232,45 @@ export default function PeminjamPage() {
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">NIP *</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Jenis Kelamin *</label>
+                    <select
+                      value={formData.gender}
+                      onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+                      className="input-field"
+                      required
+                    >
+                      <option value="L">Laki-laki</option>
+                      <option value="P">Perempuan</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">NIP</label>
                     <Input
                       type="text"
                       value={formData.nip}
                       onChange={(e) => setFormData({ ...formData, nip: e.target.value })}
                       className="input-field"
                       placeholder="1999xxxxxxxxxxxxxx"
-                      required
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ID Guru *</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ID Pegawai</label>
                     <Input
                       type="text"
-                      value={formData.teacherId}
-                      onChange={(e) => setFormData({ ...formData, teacherId: e.target.value })}
+                      value={formData.officerId}
+                      onChange={(e) => setFormData({ ...formData, officerId: e.target.value })}
                       className="input-field"
                       placeholder="12345"
-                      required
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">No. HP *</label>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">No. HP</label>
                     <Input
                       type="tel"
                       value={formData.phone}
                       onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                       className="input-field"
                       placeholder="08xxxxxxxxxx"
-                      required
                     />
                   </div>
                 </div>
@@ -352,7 +364,7 @@ export default function PeminjamPage() {
                   </div>
                   <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
                     <Users className="w-4 h-4 mr-2" />
-                    ID Guru: {borrower.teacherId}
+                    ID Guru: {borrower.officerId}
                   </div>
                   {borrower.phone && (
                     <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">

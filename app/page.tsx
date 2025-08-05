@@ -131,7 +131,7 @@ export default function DashboardPage() {
         {statCards.map((stat, idx) => {
           const Icon = stat.icon
           return (
-            <Card key={stat.title} className={`bg-gradient-to-r ${stat.gradient} text-white border-0 shadow-md`}>
+            <Card key={stat.title} className={`bg-gradient-to-r ${stat.gradient} text-white border-0 shadow-md rounded-lg`}>
               <CardContent className="flex items-center justify-between py-5">
                 <div>
                   <div className={`${stat.textColor} text-xs font-medium`}>{stat.title}</div>
@@ -174,7 +174,11 @@ export default function DashboardPage() {
                 {recentLoans.map((loan) => (
                   <TableRow
                     key={loan.id}
-                    className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${isOverdue(loan.dueDate) ? "bg-red-50 dark:bg-red-900/10" : ""}`}
+                    className={`hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors ${
+                      isOverdue(loan.dueDate) && loan.status === "dipinjam"
+                      ? "bg-red-50 dark:bg-red-900/10 hover:bg-red-100 dark:hover:bg-red-800/20"
+                      : ""
+                    } cursor-pointer`}
                   >
                     <TableCell className="px-3 py-3">
                       <div className="flex items-center space-x-2">
@@ -211,7 +215,7 @@ export default function DashboardPage() {
                       </div>
                     </TableCell>
                     <TableCell className="px-3 py-3 font-medium">
-                      <div className={isOverdue(loan.dueDate) ? "text-red-600 dark:text-red-400" : ""}>
+                      <div className={isOverdue(loan.dueDate) && loan.status === "dipinjam" ? "text-red-600 dark:text-red-400" : ""}>
                         {formatDate(loan.dueDate)}
                       </div>
                     </TableCell>

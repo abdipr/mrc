@@ -15,8 +15,9 @@ export interface Borrower {
   id: string
   name: string
   nip: string
-  teacherId: string
+  officerId: string
   phone: string
+  gender: "L" | "P"
   createdAt: string
   updatedAt: string
 }
