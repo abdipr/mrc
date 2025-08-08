@@ -4,7 +4,6 @@ export interface Item {
   category: string
   stock: number
   condition: "Baik" | "Rusak" | "Hilang"
-  location: string
   description?: string
   createdAt: string
   updatedAt: string

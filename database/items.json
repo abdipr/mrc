@@ -1,0 +1,46 @@
+[
+  {
+    "name": "Lenovo G40",
+    "category": "Elektronik",
+    "stock": 9,
+    "condition": "Baik",
+    "description": "",
+    "icon": "laptop",
+    "id": "1754469900050",
+    "createdAt": "2025-08-06T08:45:00.050Z",
+    "updatedAt": "2025-08-07T04:56:36.351Z"
+  },
+  {
+    "name": "Proyektor",
+    "category": "Elektronik",
+    "stock": 6,
+    "condition": "Baik",
+    "description": "",
+    "icon": "projector",
+    "id": "1754476487988",
+    "createdAt": "2025-08-06T10:34:47.988Z",
+    "updatedAt": "2025-08-08T01:27:05.782Z"
+  },
+  {
+    "name": "Terminal",
+    "category": "Elektronik",
+    "stock": 71,
+    "condition": "Baik",
+    "description": "",
+    "icon": "plug",
+    "id": "1754476539720",
+    "createdAt": "2025-08-06T10:35:39.720Z",
+    "updatedAt": "2025-08-08T01:06:21.181Z"
+  },
+  {
+    "name": "HDMI 5 Meter",
+    "category": "Elektronik",
+    "stock": 2,
+    "condition": "Baik",
+    "description": "",
+    "icon": "hdmi",
+    "id": "1754545553234",
+    "createdAt": "2025-08-07T05:45:53.234Z",
+    "updatedAt": "2025-08-08T01:06:21.720Z"
+  }
+]

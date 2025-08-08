@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter, usePathname } from "next/navigation"
 import { Home, Package, Users, FileText, RotateCcw, History, Settings, LogOut, Sun, Moon, Bell } from "lucide-react"
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 import { auth } from "@/lib/auth"
 
@@ -19,6 +20,7 @@ const navigation = [
 
 export default function Sidebar() {
   const [isDark, setIsDark] = useState(false)
+  const [showNotif, setShowNotif] = useState(false)
   const router = useRouter()
   const pathname = usePathname()
   const user = auth.getCurrentUser()
@@ -95,18 +97,35 @@ export default function Sidebar() {
         {/* Bottom section */}
         <div className="flex-shrink-0 border-t border-gray-200 dark:border-gray-700 p-4 space-y-3">
           {/* Theme toggle and notifications */}
-          <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between">
             <button
               onClick={toggleTheme}
               className="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
             >
               {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
             </button>
-            <button className="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors relative">
-              <Bell className="w-5 h-5" />
-              <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
-            </button>
-          </div>
+            {/* Notification Popover */}
+            <Popover>
+              <PopoverTrigger asChild>
+              <button
+                className="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors relative"
+                aria-label="Notifikasi"
+              >
+                <Bell className="w-5 h-5" />
+                {/* TODO: Show red dot if there are new notifications */}
+                {/* <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span> */}
+              </button>
+              </PopoverTrigger>
+              <PopoverContent side="top" align="start" className="w-64 p-0">
+              <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 font-semibold text-gray-900 dark:text-white">
+                Notifikasi
+              </div>
+              <div className="px-4 py-6 text-center text-gray-500 dark:text-gray-400 text-sm">
+                Coming soon
+              </div>
+              </PopoverContent>
+            </Popover>
+            </div>
 
           {/* User info */}
           <div className="flex items-center space-x-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800">

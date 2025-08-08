@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter, usePathname } from "next/navigation"
 import { Home, Package, Users, FileText, RotateCcw, History, Settings, Menu, X, LogOut, Sun, Moon, Bell } from "lucide-react"
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { cn } from "@/lib/utils"
 import { auth } from "@/lib/auth"
 
@@ -71,10 +72,25 @@ export default function MobileNav() {
           >
             {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
           </button>
-          <button className="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors relative">
-            <Bell className="w-5 h-5" />
-            <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
-          </button>
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                className="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors relative"
+                aria-label="Notifikasi"
+              >
+                <Bell className="w-5 h-5" />
+                {/* <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span> */}
+              </button>
+            </PopoverTrigger>
+            <PopoverContent side="bottom" align="end" className="w-64 p-0">
+              <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700 font-semibold text-gray-900 dark:text-white">
+                Notifikasi
+              </div>
+              <div className="px-4 py-6 text-center text-gray-500 dark:text-gray-400 text-sm">
+                Coming soon
+              </div>
+            </PopoverContent>
+          </Popover>
           <button
             onClick={() => setIsOpen(!isOpen)}
             className="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"

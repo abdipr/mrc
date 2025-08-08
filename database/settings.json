@@ -1,0 +1,18 @@
+{
+  "siteName": "Administrator",
+  "theme": "light",
+  "admin": {
+    "username": "admin",
+    "password": "admin123"
+  },
+  "notifications": {
+    "overdueReminders": true,
+    "returnReminders": true
+  },
+  "system": {
+    "defaultLoanDays": 1,
+    "maxLoanItems": 10,
+    "autoReminders": true,
+    "requireApproval": false
+  }
+}

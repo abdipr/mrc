@@ -2,32 +2,30 @@ export interface User {
   id: string
   username: string
   name: string
-  email: string
-  role: "admin" | "user"
 }
 
 class AuthService {
   private readonly STORAGE_KEY = "school_borrowing_user"
 
-  login(username: string, password: string): Promise<User> {
-    return new Promise((resolve, reject) => {
-      // Dummy authentication
-      if (username === "admin" && password === "admin123") {
-        const user: User = {
-          id: "1",
-          username: "admin",
-          name: "Administrator",
-          email: "admin@sekolah.com",
-          role: "admin",
-        }
-        if (typeof window !== "undefined") {
-          localStorage.setItem(this.STORAGE_KEY, JSON.stringify(user))
-        }
-        resolve(user)
-      } else {
-        reject(new Error("Username atau password salah"))
+  async login(username: string, password: string): Promise<User> {
+    // Fetch admin credentials from /api/settings
+    const res = await fetch("/api/settings")
+    if (!res.ok) throw new Error("Gagal mengambil data admin")
+    const settings = await res.json()
+    const admin = settings.admin
+    if (username === admin.username && password === admin.password) {
+      const user: User = {
+        id: "1",
+        username: admin.username,
+        name: settings.siteName,
       }
-    })
+      if (typeof window !== "undefined") {
+        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(user))
+      }
+      return user
+    } else {
+      throw new Error("Username atau password salah")
+    }
   }
 
   logout(): void {

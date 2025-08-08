@@ -3,23 +3,24 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { RotateCcw, Search, AlertTriangle, Clock, CheckCircle, User, Package, Filter, Laptop, Cable, Projector, Mouse, Tablet, Printer, Monitor, Keyboard, Speaker, HdmiPort, Plug, Presentation, MicVocal } from "lucide-react"
-// Icon mapping for items (same as barang page)
-const ICON_COMPONENTS: Record<string, React.ReactNode> = {
-  laptop: <Laptop className="w-5 h-5 text-gray-600 dark:text-gray-400" />,
-  cable: <Cable className="w-5 h-5 text-gray-600 dark:text-gray-400" />,
-  projector: <Projector className="w-5 h-5 text-gray-600 dark:text-gray-400" />,
-  hdmi: <HdmiPort className="w-5 h-5 text-gray-600 dark:text-gray-400" />,
-  plug: <Plug className="w-5 h-5 text-gray-600 dark:text-gray-400" />,
-  mouse: <Mouse className="w-5 h-5 text-gray-600 dark:text-gray-400" />,
-  tablet: <Tablet className="w-5 h-5 text-gray-600 dark:text-gray-400" />,
-  printer: <Printer className="w-5 h-5 text-gray-600 dark:text-gray-400" />,
-  monitor: <Monitor className="w-5 h-5 text-gray-600 dark:text-gray-400" />,
-  keyboard: <Keyboard className="w-5 h-5 text-gray-600 dark:text-gray-400" />,
-  speaker: <Speaker className="w-5 h-5 text-gray-600 dark:text-gray-400" />,
-  presentation: <Presentation className="w-5 h-5 text-gray-600 dark:text-gray-400" />,
-  mic: <MicVocal className="w-5 h-5 text-gray-600 dark:text-gray-400" />,
-  other: <Package className="w-5 h-5 text-gray-600 dark:text-gray-400" />,
-}
+
+// Icon options for items, idiomatik seperti barang
+const ICON_OPTIONS = [
+  { value: "laptop", icon: Laptop },
+  { value: "cable", icon: Cable },
+  { value: "projector", icon: Projector },
+  { value: "hdmi", icon: HdmiPort },
+  { value: "plug", icon: Plug },
+  { value: "mouse", icon: Mouse },
+  { value: "tablet", icon: Tablet },
+  { value: "printer", icon: Printer },
+  { value: "monitor", icon: Monitor },
+  { value: "keyboard", icon: Keyboard },
+  { value: "speaker", icon: Speaker },
+  { value: "presentation", icon: Presentation },
+  { value: "mic", icon: MicVocal },
+  { value: "other", icon: Package },
+];
 import Loading from "@/components/ui/loading"
 import { toast } from "sonner"
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog"
@@ -29,7 +30,7 @@ import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table"
 import { Card, CardContent } from "@/components/ui/card"
 import { auth } from "@/lib/auth"
-import { api } from "@/lib/api"
+import api from "@/lib/api"
 import type { LoanWithDetails } from "@/lib/types"
 import { formatDate, formatDateTime, isOverdue, getDaysUntilDue } from "@/lib/utils"
 
@@ -78,8 +79,46 @@ export default function PengembalianPage() {
   const loadLoans = async () => {
     try {
       setIsLoading(true)
-      const loansData = await api.getLoans()
-      setLoans(loansData.filter((loan) => loan.status === "dipinjam"))
+      // Fetch all loans, items, and borrowers (like riwayat)
+      const [loansData, items, borrowers] = await Promise.all([
+        api.getLoans(),
+        api.getItems(),
+        api.getBorrowers(),
+      ])
+
+      // Index borrowers and items by id for fast lookup
+      const borrowerMap = Object.fromEntries(
+        (borrowers || []).map((b) => [b.id?.toString(), b])
+      )
+      const itemMap = Object.fromEntries(
+        (items || []).map((item) => [item.id?.toString(), item])
+      )
+
+      // Gabungkan semua data ke satu array
+      const mapped: LoanWithDetails[] = (loansData || []).map((loan) => {
+        // Ambil borrower lengkap dari borrowerId
+        const borrower = loan.borrowerId ? borrowerMap[loan.borrowerId?.toString()] ?? null : null
+
+        // Ambil itemDetails lengkap dari loan.items
+        let itemDetails: any[] = []
+        if (Array.isArray(loan.items)) {
+          itemDetails = loan.items.map((item) => {
+            const base = itemMap[item.itemId?.toString()] ?? {}
+            return {
+              ...base,
+              quantity: item.quantity ?? 1,
+              serialNumber: item.serialNumber,
+            }
+          })
+        }
+
+        return {
+          ...loan,
+          borrower,
+          itemDetails,
+        } as LoanWithDetails
+      })
+      setLoans(mapped.filter((loan) => loan.status === "dipinjam"))
     } catch (err) {
       setError("Gagal memuat data peminjaman")
       console.error(err)
@@ -94,10 +133,10 @@ export default function PengembalianPage() {
     if (search && search.trim() !== "") {
       const q = search.trim().toLowerCase()
       filtered = filtered.filter((loan) => {
-        const borrowerName = loan.borrower?.name?.toLowerCase() || ""
-        const borrowerNIP = loan.borrower?.nip?.toLowerCase() || ""
-        const borrowerOfficerId = loan.borrower?.officerId?.toLowerCase() || ""
-        const itemMatch = loan.itemDetails?.some((item) => item.name?.toLowerCase().includes(q))
+        const borrowerName = typeof loan.borrower?.name === "string" ? loan.borrower.name.toLowerCase() : ""
+        const borrowerNIP = typeof loan.borrower?.nip === "string" ? loan.borrower.nip.toLowerCase() : ""
+        const borrowerOfficerId = typeof loan.borrower?.officerId === "string" ? loan.borrower.officerId.toLowerCase() : ""
+        const itemMatch = loan.itemDetails?.some((item) => typeof item.name === "string" ? item.name.toLowerCase().includes(q) : false)
         return (
           borrowerName.includes(q) ||
           itemMatch ||
@@ -201,7 +240,7 @@ export default function PengembalianPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen gradient-bg">
-        <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-[90rem] mx-auto py-6 px-4 sm:px-6 lg:px-8">
           <Loading />
         </div>
       </div>
@@ -216,7 +255,7 @@ export default function PengembalianPage() {
 
   return (
     <div className="min-h-screen gradient-bg">
-      <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 animate-fade-in duration-200">
+      <div className="max-w-[90rem] mx-auto py-8 px-4 sm:px-6 lg:px-8 animate-fade-in duration-200">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Pengembalian Barang</h1>
@@ -345,7 +384,7 @@ export default function PengembalianPage() {
                 filteredLoans.map((loan) => (
                   <TableRow
                     key={loan.id}
-                    className={`hover:bg-gray-100 dark:hover:bg-gray-800/50 transition-colors ${
+                    className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${
                       isOverdue(loan.dueDate) && loan.status === "dipinjam"
                       ? "bg-red-50 dark:bg-red-900/10 hover:bg-red-100 dark:hover:bg-red-800/20"
                       : ""
@@ -365,7 +404,13 @@ export default function PengembalianPage() {
                         <div>
                           <div className="font-medium text-gray-900 dark:text-white">{loan.borrower?.name}</div>
                           <div className="text-sm text-gray-500 dark:text-gray-400">
-                            {loan.borrower?.nip} - {loan.borrower?.officerId}
+                            {loan.borrower?.nip && loan.borrower?.officerId
+                          ? `${loan.borrower.nip} - ${loan.borrower.officerId}`
+                          : loan.borrower?.nip
+                          ? loan.borrower.nip
+                          : loan.borrower?.officerId
+                          ? loan.borrower.officerId
+                          : null}
                           </div>
                         </div>
                       </div>
@@ -376,7 +421,10 @@ export default function PengembalianPage() {
                           loan.itemDetails.map((item) => (
                             <div key={item.id} className="flex items-center space-x-3">
                               <div className="w-8 h-8 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center">
-                                {ICON_COMPONENTS[item.icon || "laptop"] || <Laptop className="w-5 h-5 text-gray-600 dark:text-gray-400" />}
+                                {(() => {
+                                  const Icon = ICON_OPTIONS.find(opt => opt.value === (item.icon || "laptop"))?.icon || Laptop;
+                                  return <Icon className="w-5 h-5 text-gray-600 dark:text-gray-400" />;
+                                })()}
                               </div>
                               <div>
                                 <div className="text-sm font-medium text-gray-900 dark:text-white">{item.name}</div>
@@ -478,7 +526,10 @@ export default function PengembalianPage() {
                             {detailLoan.itemDetails.map((item, idx) => (
                               <li key={item.id} className="flex items-center gap-3 py-2">
                                 <span className="inline-flex items-center justify-center w-8 h-8 rounded-lg bg-accent-100 dark:bg-accent-900/30">
-                                  {ICON_COMPONENTS[item.icon || "laptop"] || <Laptop className="w-5 h-5 text-gray-600 dark:text-gray-400" />}
+                                  {(() => {
+                                    const Icon = ICON_OPTIONS.find(opt => opt.value === (item.icon || "laptop"))?.icon || Laptop;
+                                    return <Icon className="w-5 h-5 text-gray-600 dark:text-gray-400" />;
+                                  })()}
                                 </span>
                                 <div className="flex-1">
                                   <div className="font-medium text-gray-900 dark:text-white">{item.name}</div>

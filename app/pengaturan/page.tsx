@@ -8,7 +8,7 @@ import { User, Bell, Shield, Database, Download, Upload, Save, Trash2 } from "lu
 import { toast } from "sonner"
 import { Input } from "@/components/ui/input"
 import { auth } from "@/lib/auth"
-import { api } from "@/lib/api"
+import api from "@/lib/api"
 
 export default function PengaturanPage() {
   const [activeTab, setActiveTab] = useState("profile")
@@ -16,47 +16,32 @@ export default function PengaturanPage() {
   const [error, setError] = useState("")
   const router = useRouter()
 
-  // Profile settings
+  // All settings from settings.json
+  const [settings, setSettings] = useState<any>(null)
   const [profileData, setProfileData] = useState({
     name: "",
-    email: "",
     username: "",
     currentPassword: "",
     newPassword: "",
     confirmPassword: "",
   })
 
-  // Notification settings
-  const [notifications, setNotifications] = useState({
-    emailNotifications: true,
-    overdueReminders: true,
-    returnReminders: true,
-    systemUpdates: false,
-  })
-
-  // System settings
-  const [systemSettings, setSystemSettings] = useState({
-    defaultLoanDays: 7,
-    maxLoanItems: 5,
-    autoReminders: true,
-    requireApproval: false,
-  })
-
+  // Load settings from API on mount
   useEffect(() => {
     if (!auth.isAuthenticated()) {
       router.push("/login")
       return
     }
-
-    const user = auth.getCurrentUser()
-    if (user) {
-      setProfileData((prev) => ({
-        ...prev,
-        name: user.name,
-        email: user.email,
-        username: user.username || "",
-      }))
-    }
+    fetch("/api/settings")
+      .then((res) => res.json())
+      .then((data) => {
+        setSettings(data)
+        setProfileData((prev) => ({
+          ...prev,
+          name: data.siteName || "",
+          username: data.admin?.username || "",
+        }))
+      })
   }, [router])
 
   const handleProfileSubmit = async (e: React.FormEvent) => {
@@ -64,14 +49,39 @@ export default function PengaturanPage() {
     setError("")
     setSuccess("")
 
+    if (!profileData.currentPassword) {
+      setError("Password saat ini wajib diisi untuk mengubah profil atau password admin.")
+      return
+    }
+
     if (profileData.newPassword && profileData.newPassword !== profileData.confirmPassword) {
       setError("Password baru tidak cocok")
       return
     }
 
+    // Validate current password (client-side, for better UX, but real check must be server-side)
+    if (profileData.currentPassword !== settings?.admin?.password) {
+      setError("Password saat ini salah")
+      return
+    }
+
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      // Update settings via API
+      const updated = {
+        ...settings,
+        siteName: profileData.name,
+        admin: {
+          ...settings.admin,
+          username: profileData.username,
+          password: profileData.newPassword ? profileData.newPassword : settings.admin?.password || "admin123"
+        }
+      }
+      const res = await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updated)
+      })
+      if (!res.ok) throw new Error("Gagal menyimpan pengaturan profil")
       setSuccess("Profil berhasil diperbarui")
       setProfileData((prev) => ({
         ...prev,
@@ -79,6 +89,9 @@ export default function PengaturanPage() {
         newPassword: "",
         confirmPassword: "",
       }))
+      // Refresh settings from API
+      const newSettings = await fetch("/api/settings").then((r) => r.json())
+      setSettings(newSettings)
     } catch (err) {
       setError("Gagal memperbarui profil")
     }
@@ -86,10 +99,19 @@ export default function PengaturanPage() {
 
   const handleNotificationSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError("")
+    setSuccess("")
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 500))
+      const res = await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(settings)
+      })
+      if (!res.ok) throw new Error("Gagal menyimpan pengaturan notifikasi")
       setSuccess("Pengaturan notifikasi berhasil disimpan")
+      // Refresh settings from API
+      const newSettings = await fetch("/api/settings").then((r) => r.json())
+      setSettings(newSettings)
     } catch (err) {
       setError("Gagal menyimpan pengaturan notifikasi")
     }
@@ -97,10 +119,19 @@ export default function PengaturanPage() {
 
   const handleSystemSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError("")
+    setSuccess("")
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 500))
+      const res = await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(settings)
+      })
+      if (!res.ok) throw new Error("Gagal menyimpan pengaturan sistem")
       setSuccess("Pengaturan sistem berhasil disimpan")
+      // Refresh settings from API
+      const newSettings = await fetch("/api/settings").then((r) => r.json())
+      setSettings(newSettings)
     } catch (err) {
       setError("Gagal menyimpan pengaturan sistem")
     }
@@ -156,7 +187,7 @@ export default function PengaturanPage() {
 
   return (
     <div className="min-h-screen gradient-bg">
-      <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 animate-fade-in duration-200">
+      <div className="max-w-[90rem] mx-auto py-8 px-4 sm:px-6 lg:px-8 animate-fade-in duration-200">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Pengaturan</h1>
@@ -221,20 +252,21 @@ export default function PengaturanPage() {
                     </div>
 
                     <div className="border-t border-gray-200 dark:border-gray-700 pt-6">
-                      <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Ubah Password</h3>
+                      <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">Ubah Password Admin</h3>
                       <div className="space-y-4">
-                        <div>
-                          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            Password Saat Ini
-                          </label>
-                          <Input
-                            type="password"
-                            value={profileData.currentPassword}
-                            onChange={(e) => setProfileData({ ...profileData, currentPassword: e.target.value })}
-                            className="input-field"
-                          />
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                              Password Saat Ini
+                            </label>
+                            <Input
+                              type="password"
+                              value={profileData.currentPassword}
+                              onChange={(e) => setProfileData({ ...profileData, currentPassword: e.target.value })}
+                              className="input-field"
+                              autoComplete="current-password"
+                            />
+                          </div>
                           <div>
                             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                               Password Baru
@@ -244,6 +276,7 @@ export default function PengaturanPage() {
                               value={profileData.newPassword}
                               onChange={(e) => setProfileData({ ...profileData, newPassword: e.target.value })}
                               className="input-field"
+                              autoComplete="new-password"
                             />
                           </div>
                           <div>
@@ -255,6 +288,7 @@ export default function PengaturanPage() {
                               value={profileData.confirmPassword}
                               onChange={(e) => setProfileData({ ...profileData, confirmPassword: e.target.value })}
                               className="input-field"
+                              autoComplete="new-password"
                             />
                           </div>
                         </div>
@@ -277,42 +311,45 @@ export default function PengaturanPage() {
                   <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Pengaturan Notifikasi</h2>
                   <form onSubmit={handleNotificationSubmit} className="space-y-6">
                     <div className="space-y-4">
-                      {[
-                        {
-                          key: "overdueReminders",
-                          label: "Pengingat Terlambat",
-                          desc: "Pengingat untuk peminjaman yang terlambat",
-                        },
-                        {
-                          key: "returnReminders",
-                          label: "Pengingat Pengembalian",
-                          desc: "Pengingat sebelum jatuh tempo",
-                        },
-                      ].map((item) => (
-                        <div
-                          key={item.key}
-                          className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl"
-                        >
-                          <div>
-                            <h3 className="font-medium text-gray-900 dark:text-white">{item.label}</h3>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">{item.desc}</p>
-                          </div>
-                          <label className="relative inline-flex items-center cursor-pointer">
-                            <Input
-                              type="checkbox"
-                              checked={notifications[item.key as keyof typeof notifications]}
-                              onChange={(e) =>
-                                setNotifications({
-                                  ...notifications,
-                                  [item.key]: e.target.checked,
-                                })
-                              }
-                              className="sr-only peer"
-                            />
-                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-accent-300 dark:peer-focus:ring-accent-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-accent-600"></div>
-                          </label>
-                        </div>
-                      ))}
+                       {([
+                         {
+                           key: "overdueReminders",
+                           label: "Pengingat Terlambat",
+                           desc: "Pengingat untuk peminjaman yang terlambat",
+                         },
+                         {
+                           key: "returnReminders",
+                           label: "Pengingat Pengembalian",
+                           desc: "Pengingat sebelum jatuh tempo",
+                         },
+                       ]).map((item) => (
+                         <div
+                           key={item.key}
+                           className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl"
+                         >
+                           <div>
+                             <h3 className="font-medium text-gray-900 dark:text-white">{item.label}</h3>
+                             <p className="text-sm text-gray-500 dark:text-gray-400">{item.desc}</p>
+                           </div>
+                           <label className="relative inline-flex items-center cursor-pointer">
+                             <Input
+                               type="checkbox"
+                               checked={Boolean(settings?.notifications?.[item.key])}
+                               onChange={(e) =>
+                                 setSettings((prev: any) => ({
+                                   ...prev,
+                                   notifications: {
+                                     ...(prev?.notifications || {}),
+                                     [item.key]: e.target.checked,
+                                   },
+                                 }))
+                               }
+                               className="sr-only peer"
+                             />
+                             <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-accent-300 dark:peer-focus:ring-accent-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-accent-600"></div>
+                           </label>
+                         </div>
+                       ))}
                     </div>
 
                     <div className="flex justify-end">
@@ -335,77 +372,86 @@ export default function PengaturanPage() {
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                           Durasi Peminjaman Default (hari)
                         </label>
-                        <Input
-                          type="number"
-                          min="1"
-                          max="30"
-                          value={systemSettings.defaultLoanDays}
-                          onChange={(e) =>
-                            setSystemSettings({
-                              ...systemSettings,
-                              defaultLoanDays: Number.parseInt(e.target.value) || 7,
-                            })
-                          }
-                          className="input-field"
-                        />
+                       <Input
+                         type="number"
+                         min="1"
+                         max="30"
+                         value={settings?.system?.defaultLoanDays ?? ""}
+                         onChange={(e) =>
+                           setSettings((prev: any) => ({
+                             ...prev,
+                             system: {
+                               ...prev.system,
+                               defaultLoanDays: Number.parseInt(e.target.value) || 7,
+                             },
+                           }))
+                         }
+                         className="input-field"
+                       />
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                           Maksimal Item per Peminjaman
                         </label>
-                        <Input
-                          type="number"
-                          min="1"
-                          max="20"
-                          value={systemSettings.maxLoanItems}
-                          onChange={(e) =>
-                            setSystemSettings({
-                              ...systemSettings,
-                              maxLoanItems: Number.parseInt(e.target.value) || 5,
-                            })
-                          }
-                          className="input-field"
-                        />
+                       <Input
+                         type="number"
+                         min="1"
+                         max="20"
+                         value={settings?.system?.maxLoanItems ?? ""}
+                         onChange={(e) =>
+                           setSettings((prev: any) => ({
+                             ...prev,
+                             system: {
+                               ...prev.system,
+                               maxLoanItems: Number.parseInt(e.target.value) || 5,
+                             },
+                           }))
+                         }
+                         className="input-field"
+                       />
                       </div>
                     </div>
 
                     <div className="space-y-4">
-                      {[
-                        {
-                          key: "autoReminders",
-                          label: "Pengingat Otomatis",
-                          desc: "Kirim pengingat otomatis sebelum jatuh tempo",
-                        },
-                        {
-                          key: "requireApproval",
-                          label: "Persetujuan Diperlukan",
-                          desc: "Peminjaman memerlukan persetujuan admin",
-                        },
-                      ].map((item) => (
-                        <div
-                          key={item.key}
-                          className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl"
-                        >
-                          <div>
-                            <h3 className="font-medium text-gray-900 dark:text-white">{item.label}</h3>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">{item.desc}</p>
-                          </div>
-                          <label className="relative inline-flex items-center cursor-pointer">
-                            <Input
-                              type="checkbox"
-                              checked={systemSettings[item.key as keyof typeof systemSettings] as boolean}
-                              onChange={(e) =>
-                                setSystemSettings({
-                                  ...systemSettings,
-                                  [item.key]: e.target.checked,
-                                })
-                              }
-                              className="sr-only peer"
-                            />
-                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-accent-300 dark:peer-focus:ring-accent-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-accent-600"></div>
-                          </label>
-                        </div>
-                      ))}
+                       {[
+                         {
+                           key: "autoReminders",
+                           label: "Pengingat Otomatis",
+                           desc: "Kirim pengingat otomatis sebelum jatuh tempo",
+                         },
+                         {
+                           key: "requireApproval",
+                           label: "Konfirmasi Diperlukan",
+                           desc: "Peminjaman memerlukan konfirmasi terlebih dahulu",
+                         },
+                       ].map((item) => (
+                         <div
+                           key={item.key}
+                           className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800/50 rounded-xl"
+                         >
+                           <div>
+                             <h3 className="font-medium text-gray-900 dark:text-white">{item.label}</h3>
+                             <p className="text-sm text-gray-500 dark:text-gray-400">{item.desc}</p>
+                           </div>
+                           <label className="relative inline-flex items-center cursor-pointer">
+                             <Input
+                               type="checkbox"
+                               checked={!!settings?.system?.[item.key]}
+                               onChange={(e) =>
+                                 setSettings((prev: any) => ({
+                                   ...prev,
+                                   system: {
+                                     ...prev.system,
+                                     [item.key]: e.target.checked,
+                                   },
+                                 }))
+                               }
+                               className="sr-only peer"
+                             />
+                             <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-accent-300 dark:peer-focus:ring-accent-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-accent-600"></div>
+                           </label>
+                         </div>
+                       ))}
                     </div>
 
                     <div className="flex justify-end">
@@ -462,7 +508,10 @@ export default function PengaturanPage() {
                             setSuccess("Data berhasil direset")
                           }
                         }}
-                        className="flex items-center px-5 py-2 rounded-lg font-medium bg-red-600 text-white hover:bg-red-700 focus:ring-2 focus:ring-red-400 transition-colors shadow-sm"
+                        className={`flex items-center px-5 py-2 rounded-lg font-medium bg-red-600 text-white focus:ring-2 focus:ring-red-400 transition-colors shadow-sm disabled:opacity-50 ${
+                          !true ? "hover:bg-red-700" : ""
+                        }`}
+                        disabled={true}
                       >
                         <Trash2 className="w-4 h-4 mr-2" />
                         Reset Semua Data

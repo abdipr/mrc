@@ -7,12 +7,16 @@ import { useRouter } from "next/navigation"
 import { Plus, Search, Edit, Trash2, Users, Mail, Phone } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from "@/components/ui/dialog"
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog"
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table"
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationPrevious, PaginationNext } from "@/components/ui/pagination"
 import { toast } from "sonner"
 import Loading from "@/components/ui/loading"
 import { auth } from "@/lib/auth"
-import { api } from "@/lib/api"
+import api from "@/lib/api"
+
 import type { Borrower } from "@/lib/types"
 import { formatDate } from "@/lib/utils"
 
@@ -24,6 +28,9 @@ export default function PeminjamPage() {
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
   const [search, setSearch] = useState("")
+  // Pagination
+  const [page, setPage] = useState(1)
+  const PAGE_SIZE = 20
 
   // Modal states
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -32,7 +39,13 @@ export default function PeminjamPage() {
   const [deletingBorrower, setDeletingBorrower] = useState<Borrower | null>(null)
 
   // Form states
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    name: string
+    nip: string
+    officerId: string
+    phone: string
+    gender: "L" | "P"
+  }>({
     name: "",
     nip: "",
     officerId: "",
@@ -52,14 +65,13 @@ export default function PeminjamPage() {
 
   useEffect(() => {
     filterBorrowers()
+    setPage(1) // Reset ke halaman 1 jika filter berubah
   }, [borrowers, search])
 
   const loadBorrowers = async () => {
     try {
       setIsLoading(true)
-      // Ambil data guru (bukan siswa)
       const data = await api.getBorrowers()
-      // Pastikan hanya field yang relevan
       setBorrowers(data.map((b: any) => ({
         id: b.id,
         name: b.name,
@@ -80,16 +92,29 @@ export default function PeminjamPage() {
   const filterBorrowers = () => {
     let filtered = borrowers
     if (search) {
-      filtered = filtered.filter(
-        (borrower) =>
-          borrower.name.toLowerCase().includes(search.toLowerCase()) ||
-          (borrower.nip && borrower.nip.toLowerCase().includes(search.toLowerCase())) ||
-          (borrower.officerId && borrower.officerId.toLowerCase().includes(search.toLowerCase())) ||
-          (borrower.phone && borrower.phone.toLowerCase().includes(search.toLowerCase()))
-      )
+      const q = search.toLowerCase();
+      filtered = filtered.filter((borrower) => {
+        const name = typeof borrower.name === "string" ? borrower.name.toLowerCase() : "";
+        const nip = typeof borrower.nip === "string" ? borrower.nip.toLowerCase() : "";
+        const officerId = typeof borrower.officerId === "string" ? borrower.officerId.toLowerCase() : "";
+        const phone = typeof borrower.phone === "string" ? borrower.phone.toLowerCase() : "";
+        return (
+          name.includes(q) ||
+          nip.includes(q) ||
+          officerId.includes(q) ||
+          phone.includes(q)
+        );
+      });
     }
     setFilteredBorrowers(filtered)
   }
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredBorrowers.length / PAGE_SIZE)
+  const paginatedBorrowers = filteredBorrowers.slice(
+    (page - 1) * PAGE_SIZE,
+    page * PAGE_SIZE
+  )
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -99,13 +124,13 @@ export default function PeminjamPage() {
 
       if (editingBorrower) {
         await api.updateBorrower(editingBorrower.id, formData)
-        toast.success("Data guru berhasil diperbarui", {
+        toast.success("Data peminjam berhasil diperbarui", {
           duration: 6000,
           className: "toast-success"
         })
       } else {
         await api.createBorrower(formData)
-        toast.success("Guru berhasil ditambahkan", {
+        toast.success("Peminjam berhasil ditambahkan", {
           duration: 6000,
           className: "toast-success"
         })
@@ -118,7 +143,7 @@ export default function PeminjamPage() {
         loadBorrowers()
       }, 300)
     } catch (err: any) {
-      toast.error("Gagal menyimpan data guru: " + (err?.message || JSON.stringify(err)), {
+      toast.error("Gagal menyimpan data peminjam: " + (err?.message || JSON.stringify(err)), {
         duration: 6000,
         className: "toast-error"
       })
@@ -158,13 +183,14 @@ export default function PeminjamPage() {
       })
     }
   }
+
   const resetForm = () => {
     setFormData({
       name: "",
       nip: "",
       officerId: "",
       phone: "",
-      gender: "",
+      gender: "L",
     })
   }
 
@@ -179,7 +205,7 @@ export default function PeminjamPage() {
   if (isLoading) {
     return (
       <div className="min-h-screen gradient-bg">
-        <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-[90rem] mx-auto py-6 px-4 sm:px-6 lg:px-8">
           <Loading />
         </div>
       </div>
@@ -188,12 +214,12 @@ export default function PeminjamPage() {
 
   return (
     <div className="min-h-screen gradient-bg">
-      <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 animate-fade-in">
+      <div className="max-w-[90rem] mx-auto py-8 px-4 sm:px-6 lg:px-8 animate-fade-in">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Manajemen Peminjam</h1>
-            <p className="text-sm text-gray-600 dark:text-gray-400">Kelola data siswa dan staff yang dapat meminjam barang</p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">Kelola data guru dan staff yang dapat meminjam barang</p>
           </div>
           <Dialog open={isDialogOpen} onOpenChange={(open) => {
             setIsDialogOpen(open)
@@ -219,59 +245,63 @@ export default function PeminjamPage() {
                 </p>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-6 mt-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-6">
+                  {/* Nama Lengkap full width */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Nama Lengkap *</label>
                     <Input
                       type="text"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="input-field"
+                      className="input-field max-w-2xl w-full"
                       placeholder="Arif Rahman Hakim"
                       required
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Jenis Kelamin *</label>
-                    <select
-                      value={formData.gender}
-                      onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-                      className="input-field"
-                      required
-                    >
-                      <option value="L">Laki-laki</option>
-                      <option value="P">Perempuan</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">NIP</label>
-                    <Input
-                      type="text"
-                      value={formData.nip}
-                      onChange={(e) => setFormData({ ...formData, nip: e.target.value })}
-                      className="input-field"
-                      placeholder="1999xxxxxxxxxxxxxx"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ID Pegawai</label>
-                    <Input
-                      type="text"
-                      value={formData.officerId}
-                      onChange={(e) => setFormData({ ...formData, officerId: e.target.value })}
-                      className="input-field"
-                      placeholder="12345"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">No. HP</label>
-                    <Input
-                      type="tel"
-                      value={formData.phone}
-                      onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                      className="input-field"
-                      placeholder="08xxxxxxxxxx"
-                    />
+                  {/* Grid 2 kolom 2 baris untuk sisanya */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Jenis Kelamin *</label>
+                      <Select value={formData.gender} onValueChange={(value) => setFormData({ ...formData, gender: value as "L" | "P" })} required>
+                        <SelectTrigger className="input-field" aria-label="Jenis Kelamin">
+                          <SelectValue placeholder="Pilih Jenis Kelamin" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="L" className="focus:bg-accent-100 dark:focus:bg-accent-900">Laki-laki</SelectItem>
+                          <SelectItem value="P" className="focus:bg-accent-100 dark:focus:bg-accent-900">Perempuan</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">NIP</label>
+                      <Input
+                        type="text"
+                        value={formData.nip}
+                        onChange={(e) => setFormData({ ...formData, nip: e.target.value })}
+                        className="input-field"
+                        placeholder="1999xxxxxxxxxxxxxx"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">ID Pegawai</label>
+                      <Input
+                        type="text"
+                        value={formData.officerId}
+                        onChange={(e) => setFormData({ ...formData, officerId: e.target.value })}
+                        className="input-field"
+                        placeholder="12345"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">No. HP</label>
+                      <Input
+                        type="tel"
+                        value={formData.phone}
+                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                        className="input-field"
+                        placeholder="08xxxxxxxxxx"
+                      />
+                    </div>
                   </div>
                 </div>
 
@@ -284,14 +314,14 @@ export default function PeminjamPage() {
                         setEditingBorrower(null)
                         resetForm()
                       }}
-                      className="px-5 py-2 rounded-lg font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-700 transition-colors"
+                      className="px-5 py-2 rounded-lg font-medium bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700 border border-gray-300 dark:border-gray-700 transition-all"
                     >
                       Batal
                     </Button>
                   </DialogClose>
                   <Button
                     type="submit"
-                    className="px-5 py-2 rounded-lg font-medium bg-accent-600 text-white hover:bg-accent-700 focus:ring-2 focus:ring-accent-400 transition-colors shadow-sm"
+                    className="px-5 py-2 rounded-lg font-medium bg-accent-600 text-white hover:bg-accent-700 focus:ring-2 focus:ring-accent-400 transition-all shadow-sm"
                   >
                     {editingBorrower ? "Perbarui" : "Simpan"}
                   </Button>
@@ -302,87 +332,141 @@ export default function PeminjamPage() {
         </div>
         {/* Search */}
         <div className="p-6 mb-6">
-          <div className="relative max-w-md">
+          <div className="relative max-w-full">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
             <Input
               type="text"
               placeholder="Cari peminjam..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="input-field pl-10 h-9 text-sm"
+              className="input-field pl-10 text-sm"
             />
           </div>
         </div>
+        {totalPages > 1 && (
+          <div className="flex justify-end my-6">
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    aria-disabled={page === 1}
+                  />
+                </PaginationItem>
+                {Array.from({ length: totalPages }, (_, i) => (
+                  <PaginationItem key={i}>
+                    <PaginationLink
+                      isActive={page === i + 1}
+                      onClick={() => setPage(i + 1)}
+                    >
+                      {i + 1}
+                    </PaginationLink>
+                  </PaginationItem>
+                ))}
+                <PaginationItem>
+                  <PaginationNext
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    aria-disabled={page === totalPages}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
+        )}
 
         {/* Borrowers Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredBorrowers.length === 0 ? (
-            <div className="col-span-full">
-              <div className="card p-12 text-center">
-                <Users className="w-16 h-16 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-500 dark:text-gray-400 text-lg">
-                  {search ? "Tidak ada peminjam yang sesuai dengan pencarian" : "Belum ada data peminjam"}
-                </p>
-              </div>
-            </div>
-          ) : (
-            filteredBorrowers.map((borrower) => (
-              <div key={borrower.id} className="card-hover p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center space-x-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-accent-500 to-accent-600 rounded-xl flex items-center justify-center">
-                      <span className="text-white text-lg font-semibold">{borrower.name.charAt(0)}</span>
-                    </div>
-                    <div>
-                      <h3 className="font-semibold text-gray-900 dark:text-white">{borrower.name}</h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">{borrower.nip}</p>
-                    </div>
-                  </div>
-                  <div className="flex space-x-1">
-                    <button
-                      onClick={() => handleEdit(borrower)}
-                      className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+        <div className="card overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Nama</TableHead>
+                <TableHead>NIP</TableHead>
+                <TableHead>ID Pegawai</TableHead>
+                <TableHead>L/P</TableHead>
+                <TableHead>No. HP</TableHead>
+                <TableHead>Terdaftar</TableHead>
+                <TableHead>Aksi</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {paginatedBorrowers.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-12 rounded-b-lg">
+                    <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-500 dark:text-gray-400">
+                      {search ? "Tidak ada peminjam yang sesuai dengan pencarian" : "Belum ada data peminjam"}
+                    </p>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                paginatedBorrowers.map((borrower) => (
+                    <TableRow
+                    key={borrower.id}
+                    className={paginatedBorrowers.indexOf(borrower) % 2 === 1 ? "bg-gray-50 dark:bg-gray-800/40" : ""}
                     >
-                      <Edit className="w-4 h-4" />
-                    </button>
-                    <button
-                      onClick={() => {
+                    <TableCell className="font-medium text-gray-900 dark:text-white">{borrower.name}</TableCell>
+                    <TableCell>{borrower.nip}</TableCell>
+                    <TableCell>{borrower.officerId}</TableCell>
+                    <TableCell>{borrower.gender === "L" ? "L" : "P"}</TableCell>
+                    <TableCell>{borrower.phone}</TableCell>
+                    <TableCell>{formatDate(borrower.createdAt)}</TableCell>
+                    <TableCell>
+                      <div className="flex space-x-1">
+                      <button
+                        onClick={() => handleEdit(borrower)}
+                        className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => {
                         setDeletingBorrower(borrower)
                         setIsDeleteDialogOpen(true)
-                      }}
-                      className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-                    <Users className="w-4 h-4 mr-2" />
-                    NIP: {borrower.nip}
-                  </div>
-                  <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-                    <Users className="w-4 h-4 mr-2" />
-                    ID Guru: {borrower.officerId}
-                  </div>
-                  {borrower.phone && (
-                    <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-                      <Phone className="w-4 h-4 mr-2" />
-                      {borrower.phone}
-                    </div>
-                  )}
-                </div>
-
-                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Terdaftar: {formatDate(borrower.createdAt)}
-                  </p>
-                </div>
-              </div>
-            ))
-          )}
+                        }}
+                        className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                      </div>
+                    </TableCell>
+                    </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
         </div>
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex justify-end mt-6">
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                    aria-disabled={page === 1}
+                  />
+                </PaginationItem>
+                {Array.from({ length: totalPages }, (_, i) => (
+                  <PaginationItem key={i}>
+                    <PaginationLink
+                      isActive={page === i + 1}
+                      onClick={() => setPage(i + 1)}
+                    >
+                      {i + 1}
+                    </PaginationLink>
+                  </PaginationItem>
+                ))}
+                <PaginationItem>
+                  <PaginationNext
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                    aria-disabled={page === totalPages}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
+        )}
       </div>
 
       {/* Dialog sudah dipindahkan ke header agar konsisten dengan barang */}

@@ -4,7 +4,7 @@ import type React from "react"
 
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Plus, Search, Edit, Trash2, Package, Filter } from "lucide-react"
+import { Plus, Search, Edit, Trash2, Filter } from "lucide-react"
 // Icon components mapping (lucide-react)
 import {
   Laptop,
@@ -20,6 +20,7 @@ import {
   Plug,
   Presentation,
   MicVocal,
+  Package,
 } from "lucide-react"
 import Loading from "@/components/ui/loading"
 import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogClose } from "@/components/ui/dialog"
@@ -28,10 +29,9 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell, TableCaption } from "@/components/ui/table"
 import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog"
 import { auth } from "@/lib/auth"
-import { api } from "@/lib/api"
+import api from "@/lib/api"
 import type { Item } from "@/lib/types"
 import { formatDate } from "@/lib/utils"
 import { toast } from "sonner"
@@ -47,40 +47,24 @@ const [search, setSearch] = useState("")
 const [categoryFilter, setCategoryFilter] = useState("all")
 const [conditionFilter, setConditionFilter] = useState("all")
 
-// Icon options for devices
-const ICON_OPTIONS = [
-  { label: "Laptop", value: "laptop" },
-  { label: "Cable", value: "cable" },
-  { label: "Projector", value: "projector" },
-  { label: "HDMI", value: "hdmi" },
-  { label: "Plug", value: "plug"},
-  { label: "Mouse", value: "mouse" },
-  { label: "Tablet", value: "tablet" },
-  { label: "Printer", value: "printer" },
-  { label: "Monitor", value: "monitor" },
-  { label: "Keyboard", value: "keyboard" },
-  { label: "Speaker", value: "speaker" },
-  { label: "Presentation", value: "presentation" },
-  { label: "Mic", value: "mic" },
-  { label: "Lainnya", value: "other"},
-]
 
-const ICON_COMPONENTS: Record<string, React.ReactNode> = {
-  laptop: <Laptop className="w-6 h-6 text-accent-600 dark:text-accent-400" />,
-  cable: <Cable className="w-6 h-6 text-accent-600 dark:text-accent-400" />,
-  projector: <Projector className="w-6 h-6 text-accent-600 dark:text-accent-400" />,
-  hdmi: <HdmiPort className="w-6 h-6 text-accent-600 dark:text-accent-400" />,
-  plug: <Plug className="w-6 h-6 text-accent-600 dark:text-accent-400" />,
-  mouse: <Mouse className="w-6 h-6 text-accent-600 dark:text-accent-400" />,
-  tablet: <Tablet className="w-6 h-6 text-accent-600 dark:text-accent-400" />,
-  printer: <Printer className="w-6 h-6 text-accent-600 dark:text-accent-400" />,
-  monitor: <Monitor className="w-6 h-6 text-accent-600 dark:text-accent-400" />,
-  keyboard: <Keyboard className="w-6 h-6 text-accent-600 dark:text-accent-400" />,
-  speaker: <Speaker className="w-6 h-6 text-accent-600 dark:text-accent-400" />,
-  presentation: <Presentation className="w-6 h-6 text-accent-600 dark:text-accent-400" />,
-  mic: <MicVocal className="w-6 h-6 text-accent-600 dark:text-accent-400" />,
-  other: <Package className="w-6 h-6 text-accent-600 dark:text-accent-400" />,
-}
+// Icon options for devices, simpan komponen icon langsung
+const ICON_OPTIONS = [
+  { label: "Laptop", value: "laptop", icon: Laptop },
+  { label: "Cable", value: "cable", icon: Cable },
+  { label: "Projector", value: "projector", icon: Projector },
+  { label: "HDMI", value: "hdmi", icon: HdmiPort },
+  { label: "Plug", value: "plug", icon: Plug },
+  { label: "Mouse", value: "mouse", icon: Mouse },
+  { label: "Tablet", value: "tablet", icon: Tablet },
+  { label: "Printer", value: "printer", icon: Printer },
+  { label: "Monitor", value: "monitor", icon: Monitor },
+  { label: "Keyboard", value: "keyboard", icon: Keyboard },
+  { label: "Speaker", value: "speaker", icon: Speaker },
+  { label: "Presentation", value: "presentation", icon: Presentation },
+  { label: "Mic", value: "mic", icon: MicVocal },
+  { label: "Lainnya", value: "other", icon: Package },
+]
 
   // Modal states
   const [isDialogOpen, setIsDialogOpen] = useState(false)
@@ -94,7 +78,6 @@ const ICON_COMPONENTS: Record<string, React.ReactNode> = {
     category: "",
     stock: 0,
     condition: "Baik" as "Baik" | "Rusak" | "Hilang",
-    location: "",
     description: "",
     icon: "laptop", // default icon
   })
@@ -132,8 +115,7 @@ const ICON_COMPONENTS: Record<string, React.ReactNode> = {
       filtered = filtered.filter(
         (item) =>
           item.name.toLowerCase().includes(search.toLowerCase()) ||
-          item.category.toLowerCase().includes(search.toLowerCase()) ||
-          item.location.toLowerCase().includes(search.toLowerCase()),
+          item.category.toLowerCase().includes(search.toLowerCase()),
       )
     }
 
@@ -175,7 +157,6 @@ const ICON_COMPONENTS: Record<string, React.ReactNode> = {
       category: item.category,
       stock: item.stock,
       condition: item.condition,
-      location: item.location,
       description: item.description || "",
       icon: item.icon || "laptop",
     })
@@ -200,7 +181,6 @@ const ICON_COMPONENTS: Record<string, React.ReactNode> = {
       category: "",
       stock: 0,
       condition: "Baik",
-      location: "",
       description: "",
       icon: "laptop",
     })
@@ -219,7 +199,7 @@ const ICON_COMPONENTS: Record<string, React.ReactNode> = {
   if (isLoading) {
     return (
       <div className="min-h-screen gradient-bg">
-        <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-[90rem] mx-auto py-6 px-4 sm:px-6 lg:px-8">
           <Loading />
         </div>
       </div>
@@ -228,7 +208,7 @@ const ICON_COMPONENTS: Record<string, React.ReactNode> = {
 
   return (
     <div className="min-h-screen gradient-bg">
-      <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8 animate-fade-in duration-200">
+      <div className="max-w-[90rem] mx-auto py-8 px-4 sm:px-6 lg:px-8 animate-fade-in duration-200">
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-8">
           <div>
@@ -247,86 +227,86 @@ const ICON_COMPONENTS: Record<string, React.ReactNode> = {
                 <DialogTitle>{editingItem ? "Edit Barang" : "Tambah Barang Baru"}</DialogTitle>
               </DialogHeader>
               <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
+                <div className="space-y-6">
+                  {/* Nama Barang full width */}
                   <div>
                     <Label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Nama Barang *</Label>
                     <Input
                       type="text"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="input-field"
+                      className="input-field max-w-2xl w-full"
                       required
                     />
                   </div>
-
-                  <div>
-                    <Label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Icon Barang *</Label>
-                    <Select
-                      value={formData.icon}
-                      onValueChange={(val) => setFormData({ ...formData, icon: val })}
-                      required
-                    >
-                      <SelectTrigger className="input-field">
-                        <SelectValue placeholder="Pilih icon" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {ICON_OPTIONS.map((opt) => (
-                          <SelectItem key={opt.value} value={opt.value} className="flex items-center gap-2">
-                            <span className="inline-flex items-center gap-2">
-                              {ICON_COMPONENTS[opt.value]}
-                              {opt.label}
-                            </span>
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  {/* Grid 2 kolom untuk input lainnya */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                      <Label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Icon Barang *</Label>
+                      <Select
+                        value={formData.icon}
+                        onValueChange={(val) => setFormData({ ...formData, icon: val })}
+                        required
+                      >
+                        <SelectTrigger className="input-field">
+                          <SelectValue placeholder="Pilih icon" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {ICON_OPTIONS.map((opt) => (
+                            <SelectItem key={opt.value} value={opt.value} className="flex items-center gap-2">
+                              <span className="inline-flex items-center gap-2">
+                          {(() => {
+                            const Icon = opt.icon
+                            return <Icon className="w-6 h-6 text-accent-600 dark:text-accent-400" />
+                          })()}
+                                {opt.label}
+                              </span>
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Kategori *</Label>
+                      <Input
+                        type="text"
+                        value={formData.category}
+                        onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                        className="input-field"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Stok *</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        value={formData.stock}
+                        onChange={(e) => setFormData({ ...formData, stock: Number.parseInt(e.target.value) || 0 })}
+                        className="input-field"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Kondisi *</Label>
+                      <Select
+                        value={formData.condition}
+                        onValueChange={(val) => setFormData({ ...formData, condition: val as 'Baik' | 'Rusak' | 'Hilang' })}
+                        required
+                      >
+                        <SelectTrigger className="input-field">
+                          <SelectValue placeholder="Pilih kondisi" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Baik">Baik</SelectItem>
+                          <SelectItem value="Rusak">Rusak</SelectItem>
+                          <SelectItem value="Hilang">Hilang</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
-
+                  {/* Deskripsi tetap full width di bawah */}
                   <div>
-                    <Label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Kategori *</Label>
-                    <Input
-                      type="text"
-                      value={formData.category}
-                      onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                      className="input-field"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <Label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Stok *</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      value={formData.stock}
-                      onChange={(e) => setFormData({ ...formData, stock: Number.parseInt(e.target.value) || 0 })}
-                      className="input-field"
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <Label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Kondisi *</Label>
-                    <Select
-                      value={formData.condition}
-                      onValueChange={(val) => setFormData({ ...formData, condition: val as "Baik" | "Rusak" | "Hilang" })}
-                      required
-                    >
-                      <SelectTrigger className="input-field">
-                        <SelectValue placeholder="Pilih kondisi" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Baik">Baik</SelectItem>
-                        <SelectItem value="Rusak">Rusak</SelectItem>
-                        <SelectItem value="Hilang">Hilang</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-
-
-                <div className="md:col-span-2">
                     <Label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Deskripsi</Label>
                     <Textarea
                       value={formData.description}
@@ -364,15 +344,15 @@ const ICON_COMPONENTS: Record<string, React.ReactNode> = {
 
         {/* Filters */}
         <div className="p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div className="relative">
+          <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
+            <div className="relative md:col-span-3">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
               <Input
                 type="text"
                 placeholder="Cari barang..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="input-field pl-10 "
+                className="input-field pl-10"
               />
             </div>
 
@@ -418,102 +398,66 @@ const ICON_COMPONENTS: Record<string, React.ReactNode> = {
         </div>
 
         {/* Items Table - shadcn/ui Table */}
-        <div className="card overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="rounded-tl-lg w-12">Icon</TableHead>
-                <TableHead>Nama Barang</TableHead>
-                <TableHead>Kategori</TableHead>
-                <TableHead>Stok</TableHead>
-                <TableHead>Kondisi</TableHead>
-                <TableHead>Terakhir Update</TableHead>
-                <TableHead className="rounded-tr-lg">Aksi</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredItems.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={8} className="text-center py-12 rounded-b-lg">
-                    <Package className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                    <p className="text-gray-500 dark:text-gray-400">
-                      {search || categoryFilter || conditionFilter
-                        ? "Tidak ada barang yang sesuai dengan filter"
-                        : "Belum ada data barang"}
-                    </p>
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredItems.map((item, idx) => {
-                  const isLast = idx === filteredItems.length - 1
-                  return (
-                    <TableRow
-                      key={item.id}
-                      className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors ${isLast ? 'last-row' : ''}`}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {filteredItems.length === 0 ? (
+            <div className="col-span-full">
+              <div className="card p-12 text-center">
+                <Package className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-500 dark:text-gray-400 text-lg">
+                  {search || categoryFilter || conditionFilter
+                    ? "Tidak ada barang yang sesuai dengan filter"
+                    : "Belum ada data barang"}
+                </p>
+              </div>
+            </div>
+          ) : (
+            filteredItems.map((item) => (
+              <div key={item.id} className="card-hover p-6 flex flex-col h-full">
+                <div className="flex items-center space-x-4 mb-4">
+                  <div className="w-14 h-14 flex items-center justify-center bg-accent-100 dark:bg-accent-900 rounded-xl">
+                    {(() => {
+                      const Icon = ICON_OPTIONS.find(opt => opt.value === (item.icon || "laptop"))?.icon || Laptop
+                      return <Icon className="w-8 h-8 text-accent-600 dark:text-accent-400" />
+                    })()}
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-gray-900 dark:text-white text-lg">{item.name}</h3>
+                    <div className="text-sm text-gray-500 dark:text-gray-400">{item.category}</div>
+                  </div>
+                  <div className="flex-shrink-0">
+                  <span className={`font-semibold text-2xl ${item.stock === 0 ? "text-red-600 dark:text-red-400" : item.stock < 5 ? "text-yellow-600 dark:text-yellow-400" : "text-green-600 dark:text-green-400"}`}>{item.stock}</span><span className="text-lg text-gray-500 dark:text-gray-400 font-semibold">x</span>
+                  </div>
+                </div>
+                {item.description && (
+                  <div className="text-sm text-gray-500 dark:text-gray-400 mb-2">{item.description}</div>
+                )}
+                <div className="flex flex-wrap gap-3 text-sm mb-4">
+                  <span className={`badge ${item.condition === "Baik" ? "badge-success" : item.condition === "Rusak" ? "badge-warning" : "badge-danger"}`}>{item.condition}</span>
+                </div>
+                <div className="flex items-center mt-auto">
+                  <span className="text-sm text-gray-600 dark:text-gray-400">{formatDate(item.updatedAt)}</span>
+                  <div className="flex-grow" />
+                  <div className="flex space-x-2">
+                    <Button
+                      onClick={() => handleEdit(item)}
+                      className="w-12 p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                     >
-                      <TableCell className={isLast ? "rounded-bl-lg" : undefined}>
-                        {ICON_COMPONENTS[item.icon || "laptop"] || <Laptop className="w-6 h-6 text-accent-600 dark:text-accent-400" />}
-                      </TableCell>
-                      <TableCell>
-                        <div className="font-medium text-gray-900 dark:text-white">{item.name}</div>
-                        {item.description && (
-                          <div className="text-sm text-gray-500 dark:text-gray-400 mt-1">{item.description}</div>
-                        )}
-                      </TableCell>
-                      <TableCell>{item.category}</TableCell>
-                      <TableCell>
-                        <span
-                          className={`font-semibold ${
-                            item.stock === 0
-                              ? "text-red-600 dark:text-red-400"
-                              : item.stock < 5
-                                ? "text-yellow-600 dark:text-yellow-400"
-                                : "text-green-600 dark:text-green-400"
-                          }`}
-                        >
-                          {item.stock}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <span
-                          className={`badge ${
-                            item.condition === "Baik"
-                              ? "badge-success"
-                              : item.condition === "Rusak"
-                                ? "badge-warning"
-                                : "badge-danger"
-                          }`}
-                        >
-                          {item.condition}
-                        </span>
-                      </TableCell>
-                      {/* <TableCell className="text-gray-600 dark:text-gray-400">{item.location}</TableCell> */}
-                      <TableCell className="text-gray-600 dark:text-gray-400">{formatDate(item.updatedAt)}</TableCell>
-                      <TableCell className={isLast ? "rounded-br-lg" : undefined}>
-                        <div className="flex space-x-2">
-                          <Button
-                            onClick={() => handleEdit(item)}
-                            className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            onClick={() => {
-                              setDeletingItem(item)
-                              setIsDeleteDialogOpen(true)
-                            }}
-                            className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  )
-                })
-              )}
-            </TableBody>
-          </Table>
+                      <Edit className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      onClick={() => {
+                        setDeletingItem(item)
+                        setIsDeleteDialogOpen(true)
+                      }}
+                      className="w-12 p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
 
