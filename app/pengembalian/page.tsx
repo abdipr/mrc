@@ -174,6 +174,17 @@ export default function PengembalianPage() {
       setSuccess("")
 
       await api.returnLoan(returningLoan.id)
+      try {
+        await fetch("https://symmetrical-space-carnival-vrrw9wqvjv93xrv7-3000.app.github.dev/kembali", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ id: returningLoan.id })
+        })
+      } catch (err) {
+        console.error("Gagal POST ke API eksternal /kembali:", err)
+      }
 
       // Update stock for all items in the loan
       const allItems = await api.getItems()

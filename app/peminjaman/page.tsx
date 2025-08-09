@@ -161,7 +161,39 @@ export default function PeminjamanPage() {
         notes: notes || undefined,
       };
 
-      await api.createLoan(loanData);
+      const createdLoan = await api.createLoan(loanData);
+      // disini
+      // Kirim data ke API eksternal
+      try {
+        // Ambil data peminjam
+        const borrower = borrowers.find(b => b.id === selectedBorrower);
+        // Format items
+        const itemsBody = validItems.map(item => {
+          const itemData = items.find(i => i.id === item.itemId);
+          return {
+            item_name: itemData?.name || "Barang",
+            qty: item.quantity
+          };
+        });
+        // Compose body
+        const postBody = {
+          id: createdLoan?.id || "",
+          number: borrower?.phone || "",
+          name: borrower?.name || "",
+          start_date: toWIBISOString(nowJakarta),
+          due_date: toWIBISOString(dueJakarta),
+          items: itemsBody
+        };
+        await fetch("https://symmetrical-space-carnival-vrrw9wqvjv93xrv7-3000.app.github.dev/pinjam", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify(postBody)
+        });
+      } catch (err) {
+        console.error("Gagal POST ke API eksternal:", err);
+      }
 
       // Update item stocks
       for (const loanItem of validItems) {
@@ -544,20 +576,23 @@ export default function PeminjamanPage() {
 
                         <Input
                           type="number"
-                          min="1"
+                          min="0"
                           max={(() => {
                             const stock = selectedItem?.stock || 1;
                             const maxLoan = settings?.system?.maxLoanItems;
                             return Math.min(stock, maxLoan);
                           })()}
-                          value={loanItem.quantity}
-                          onChange={(e) =>
-                            updateLoanItem(
-                              index,
-                              "quantity",
-                              Number.parseInt(e.target.value) || 1
-                            )
-                          }
+                          value={loanItem.quantity === 0 ? "" : loanItem.quantity.toString()}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            // Allow empty string (user clears input)
+                            if (val === "") {
+                              updateLoanItem(index, "quantity", 0);
+                            } else {
+                              const num = Number.parseInt(val);
+                              updateLoanItem(index, "quantity", isNaN(num) ? 0 : num);
+                            }
+                          }}
                           placeholder="Jumlah"
                           className="h-9 text-sm bg-gray-50"
                           required
